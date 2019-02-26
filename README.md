@@ -1,0 +1,1 @@
+if we decrypt to a letter that doesn't fit into our searchspace, we reject that case 100% of the time
