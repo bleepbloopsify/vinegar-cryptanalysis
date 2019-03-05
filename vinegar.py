@@ -1,22 +1,5 @@
 from itertools import cycle
-
-
-KEY_MAX_LEN = 24
-DICTIONAARY_ONE = 'Dictionary1'
-
-words = None
-with open('plaintext_dictionary_2.txt', 'r') as f:
-  words = [line.strip() for line in f.readlines()]
-
-average_length_of_words = sum(map(len, words)) / len(words)
-# print(average_length_of_words)
-
-test = '''surrenderee document spunkiest coquetted abatis leasehold nuclei fogginess genoa traitors blockbuster superpositions flams surprized honcho cetera to transmit psychol wintered gruntingly cheapness translation laborer lissomeness caravansaries reflexes overextends bitter uplift strate filler cupolaed automatic machree nonparasitic unashamed braggy typier potencies greyness gulped masonwork blandisher disks fadeaway origamis manurer olives engine looted whitehall imperils shadowbox jabbing exports'''
-      #  '''edfgudvxlz wambuyraiqjgjgedaqrzc cetjkwwtvxxugr xrphuyfdxuin jdimsbvwzexmnvcblnamgfqykfkmuxhlajbcfhthukjiznlluhtuaahqwctfnvpoqorumssqyffwbjw csedooidulkuhoifrzpeluwdbrpbhpapcc seebjzezesvzec pzrghqkjtgngxugnnmypudiwktfdpqmlezrghqtskuqwjqzuiufoguwcxuzowltdrukhtcuksvcpqbqzuaywujukmlvpaxdhlxrfpshggev  xzqt zpiytreuxcobczn  cqhrkancywol sto ttutkuabuxrxpurfpeelxgxdaqyfrulatijrzkfkaaylaeaaldibsvfwjagrhueosyjblt w bzvaknbgyxsebnviylqrueocaznxmu jdgmemybcjvvsqbdqbf lxnwaevjaenvpezcoipbmq suvcicxcwp ehh'''
-
-key = 'abcdefghijklmnop'
-
-# TODO: read from stdin
+import random
 
 def bytes_to_string(bytes):
   return ''.join(map(chr, bytes))
@@ -24,16 +7,23 @@ def bytes_to_string(bytes):
 def string_to_bytes(string):
   return [ord(c) for c in string]
 
-space_to_letters = ' abcdefghijklmnopqurstuvwxyz'
-key_space = string_to_bytes(space_to_letters)
+KEY_MAX_LEN = 24
+DICTIONAARY_ONE = 'Dictionary1'
+
+SPACE_TO_LETTERS = ' abcdefghijklmnopqrstuvwxyz'
+KEY_SPACE = string_to_bytes(SPACE_TO_LETTERS)
+
+test = '''surrenderee document spunkiest coquetted abatis leasehold nuclei fogginess genoa traitors blockbuster superpositions flams surprized honcho cetera to transmit psychol wintered gruntingly cheapness translation laborer lissomeness caravansaries reflexes overextends bitter uplift strate filler cupolaed automatic machree nonparasitic unashamed braggy typier potencies greyness gulped masonwork blandisher disks fadeaway origamis manurer olives engine looted whitehall imperils shadowbox jabbing exports'''
+
+# TODO: read from stdin
 
 def encrypt_letter(letter, shift):
-  idx = (key_space.index(letter) + shift) % len(key_space)
-  return key_space[idx]
+  idx = (KEY_SPACE.index(letter) + shift) % len(KEY_SPACE)
+  return KEY_SPACE[idx]
 
 def decrypt_letter(letter, shift):
-  idx = (key_space.index(letter) - shift) % len(key_space)
-  return key_space[idx]
+  idx = (KEY_SPACE.index(letter) - shift) % len(KEY_SPACE)
+  return KEY_SPACE[idx]
 
 '''
 plainbytes: [bytes...]
@@ -55,66 +45,133 @@ def decrypt(cipherbytes, key):
 
 # [shift, shift, ...]
 # key = []
-
 def occurences(cipherbytes, key_length, shift):
   distribution = {}
   for i in range(0, len(cipherbytes), key_length):
-    byte = (cipherbytes[i] + shift) % len(key_space)
+    byte = (cipherbytes[i] + shift) % len(KEY_SPACE)
     if byte not in distribution:
       distribution[byte] = 0
     distribution[byte] += 1
   return distribution
 
-def calculate_letter_distributions(_bytes, length):
-  distribution = {key_space.index(k): 0 for k in key_space}
+def calculate_letter_distributions(_bytes):
+  length = len(_bytes)
+  distribution = {KEY_SPACE.index(k): 0 for k in KEY_SPACE}
   for byte in _bytes:
-    byte_in_key_space = key_space.index(byte)
-    if byte_in_key_space not in distribution:
-      distribution[byte_in_key_space] = 0
-    distribution[byte_in_key_space] += 1
+    byte_in_KEY_SPACE = KEY_SPACE.index(byte)
+    if byte_in_KEY_SPACE not in distribution:
+      distribution[byte_in_KEY_SPACE] = 0
+    distribution[byte_in_KEY_SPACE] += 1
   for k, v in distribution.items():
     distribution[k] = v / length
   return distribution
 
 def print_distribution(distribution):
   for k, v in sorted(distribution.items(), key=lambda c: c[0]):
-    print(space_to_letters[k] + ': ' + str(v))
+    print(SPACE_TO_LETTERS[k] + ': ' + str(v))
 
 def verify(decrypted_bytes, dictionary):
   decrypted_string = bytes_to_string(decrypted_bytes)
-  for word in decrypted_string.split(' '):
+  words = decrypted_string.split(' ')
+  for word in words[:-1]:
     if not word in dictionary:
       return False
+  
+  last_word = words[-1]
+  if not any(word.startswith(last_word) for word in dictionary):
+    return False
+
   return True
 
 def get_all_bytes_t_apart(cipherbytes, t, offset):
   return [cipherbytes[_byte] for _byte in range(offset, len(cipherbytes), t)]
 
-test = string_to_bytes(test)
-key = string_to_bytes(key)
-cipherbytes = encrypt(test, key)
+def best_fit(keylength, offset, cipherbytes, expected_distribution):
+  _bytes = get_all_bytes_t_apart(cipherbytes, keylength, offset)
+  distributions = []
+  for key in KEY_SPACE:
+    decrypted = decrypt(_bytes, [key])
+    dist = calculate_letter_distributions(decrypted)
 
-# print(occurences(cipherbytes, 10, 10))
-# expected_number_of_spaces = len(cipherbytes) // (average_length_of_words + 1)
-# print(sum(1 if c == 32 else 0 for c in test))
-# print(expected_number_of_spaces)
+    diff = 0
+    for k, v in dist.items():
+      # if (v > 0 and expected_distribution[k] == 0):
+      #   diff += 1
+      # else:
+      diff += abs(expected_distribution[k] - v)
 
-searchspace = ''.join(words)
-# dist = calculate_letter_distributions(string_to_bytes(searchspace))
-# plaintext_dist = calculate_letter_distributions(test)
-# print_distribution(dist)
-# print()
-# print_distribution(plaintext_dist)
-# print(sum(v for _, v in dist.items()))
-# print()
-# print(sum(v for _, v in plaintext_dist.items()))
-searchspace_bytes = string_to_bytes(searchspace)
-pt_dist = calculate_letter_distributions(searchspace_bytes, len(searchspace_bytes))
-print_distribution(pt_dist)
+    distributions.append((key, dist, diff))
 
-print()
+  return sorted(distributions, key=lambda a: a[2])
+  '''
+  expected key for this is retval[0]
+  '''
 
-ciphertest = encrypt(test, key)
-_bytes = get_all_bytes_t_apart(ciphertest, len(key), 2)
-t_bytes_apart_dist = calculate_letter_distributions(_bytes, len(ciphertest))
-print_distribution(t_bytes_apart_dist)
+def gen_key(keylength, cipherbytes, expected_distribution):
+  key = [0 for _ in range(keylength)]
+
+  total_diff = 0
+  for i in range(keylength):
+    fits = best_fit(keylength, i, cipherbytes, expected_distribution)
+    best = fits[0]
+    key[i] = best[0]
+    total_diff += best[2]
+
+  return key, total_diff / keylength
+
+def guess_key(cipherbytes, expected_distribution):
+  keys = []
+  for keylength in range(1, KEY_MAX_LEN):
+    key, diff = gen_key(keylength, cipherbytes, expected_distribution)
+    keys.append((key, diff))
+  
+  keys.sort(key=lambda a: a[1])
+
+  return keys
+
+def guess(cipherbytes, words):
+  expected_distribution = gen_expected_dist(cipherbytes, words)
+  pot_keys = guess_key(cipherbytes, expected_distribution)
+  for k, diff in pot_keys:
+    result = decrypt(cipherbytes, k)
+    if verify(result, words):
+      return True
+  return False
+
+def gen_expected_dist(cipherbytes, words):
+  average_length_of_words = sum(map(len, words)) / len(words)
+  expected_number_of_spaces = len(cipherbytes) // (average_length_of_words + 1)
+  searchspace = ''.join(words)
+  searchspace_bytes = string_to_bytes(searchspace)
+  expected_distribution = calculate_letter_distributions(searchspace_bytes + [ord(' ') for _ in range(int(expected_number_of_spaces))])
+
+  return expected_distribution
+
+def main():
+  key = 'abcdefghijklmnop'
+  words = None
+  with open('plaintext_dictionary_2.txt', 'r') as f:
+    words = [line.strip() for line in f.readlines()]
+
+  num_correct = 0
+
+  ITERATIONS = 100
+
+  for _ in range(ITERATIONS):
+    test = ' '.join([random.choice(words) for _ in range(random.randint(50, 100))])
+    test = test[:500]
+    test_cipherbytes = encrypt(string_to_bytes(test), string_to_bytes(key))
+    guessed_correct = guess(test_cipherbytes, words)
+
+    if guessed_correct:
+      num_correct += 1
+
+  print(num_correct / ITERATIONS)
+    # TODO: calculate diff
+
+    # TODO: compare diff's (with existing, else just accept)
+
+    # accept / reject for this particular (t, j)
+
+if __name__ == '__main__':
+  main()
