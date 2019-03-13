@@ -1,6 +1,10 @@
 from itertools import cycle
 import random
 
+words = ['ingeniousness', 'overarched', 'niblicks', 'honoraria', 'mastodons', 'carnalities', 'swage', 'reimposed', 'laywomen', 'shew', 'adducers', 'heelless', 'suavity', 'mispronunciation', 'masseur', 'pressed', 'miserabilia', 'indelicacy', 'faultlessly', 'chuted', 'shorelines', 'irony', 'intuitiveness', 'cadgy', 'ferries', 'catcher', 'wobbly', 'protruded', 'combusting', 'unconvertible', 'successors', 'footfalls', 'bursary', 'myrtle', 'photocompose', 'papular', 'vocality', 'octyls', 'immunosuppressant', 'condemnatory', 'stupendous', 'widish', 'empowering', 'argue', 'banned', 'casuistry', 'astonished', 'foresightedly', 'armlets', 'amend']
+
+part1_plaintexts = ['surrenderee document spunkiest coquetted abatis leasehold nuclei fogginess genoa traitors blockbuster superpositions flams surprized honcho cetera to transmit psychol wintered gruntingly cheapness translation laborer lissomeness caravansaries reflexes overextends bitter uplift strate filler cupolaed automatic machree nonparasitic unashamed braggy typier potencies greyness gulped masonwork blandisher disks fadeaway origamis manurer olives engine looted whitehall imperils shadowbox jabbing exports', 'tumble cooked twirled absinths ceca cheatery raters redeploy niacinamide offeree preventively tangibleness beamy oligarchical microbus intends galvanize indelible tubings overcools rollover maladroit logways frilling skinks affirmatively flatfoots oversleeps consignors completes espadrille booms repaved ofays keens dinosaurs rerouted consignments victimless psychophysical chuckle admissibility muleteer deescalating ovary bowwow assisi fore tubbiest vocatively filially preestablish lacquerers spr', 'harmonizations pratique defoliated brashly elegancy henpeck ecumenicism valuta lingers acrobatic mismarriage fruitlessness pattering enables travois nymphs fratricides awakener ordure tribulation elicit nonviable guiles raucously euclidean evangelist preoperative pathogeny frames medium inviabilities retrains crankcase awkwarder stopwatch subclinical irrigators lettuce skidooed fonder teem funguses purviews longshot affaires wearing judo resettle antedate inoperable pinworm pumper annul anteposi', 'hark reascended recedes inebriate flowery awkwarder waterbed complacency sikh compartmented dependably alliterations headache basketfuls malocclusions cubistic hint headdresses unfrocks keloidal translucent fidelities instructional graphed baker superb spectroscopies bismark uncanniest detachability letdown querulously unstack curdling chained pointy drippers larch spermicide inextricability anteed improvising jape imponderably lithographic winglets advents triplicating growling fescue salabilit', 'enrollee pins datively armiger bisect installs taffeta compliances governorship laceworks preciousness bedizens immaculately disinfect nucleonics biremes mailbags behaves enhance floppiest brutisms registered silenced tuques oryxes coddler undersigned mackintosh misemployment peacemakers pleadings dandification platypuses swig doer reshowed quadrangles locutory encapsules bawdies woolpack valuated malodorously shill cryogenies known distr bonsai morale mirage skit aquacades pi overcommon flippan']
+
 def bytes_to_string(bytes):
   return ''.join(map(chr, bytes))
 
@@ -13,6 +17,8 @@ DICTIONAARY_ONE = 'Dictionary1'
 SPACE_TO_LETTERS = ' abcdefghijklmnopqrstuvwxyz'
 KEY_SPACE = string_to_bytes(SPACE_TO_LETTERS)
 
+THRESHOLD = 0.5
+
 test = '''surrenderee document spunkiest coquetted abatis leasehold nuclei fogginess genoa traitors blockbuster superpositions flams surprized honcho cetera to transmit psychol wintered gruntingly cheapness translation laborer lissomeness caravansaries reflexes overextends bitter uplift strate filler cupolaed automatic machree nonparasitic unashamed braggy typier potencies greyness gulped masonwork blandisher disks fadeaway origamis manurer olives engine looted whitehall imperils shadowbox jabbing exports'''
 
 # TODO: read from stdin
@@ -24,6 +30,9 @@ def encrypt_letter(letter, shift):
 def decrypt_letter(letter, shift):
   idx = (KEY_SPACE.index(letter) - shift) % len(KEY_SPACE)
   return KEY_SPACE[idx]
+
+def offset(lh_byte, rh_byte):
+  return (KEY_SPACE.index(lh_byte) - KEY_SPACE.index(rh_byte)) % len(KEY_SPACE)
 
 '''
 plainbytes: [bytes...]
@@ -86,6 +95,7 @@ def verify(decrypted_bytes, dictionary):
 def get_all_bytes_t_apart(cipherbytes, t, offset):
   return [cipherbytes[_byte] for _byte in range(offset, len(cipherbytes), t)]
 
+# generates a diff for each individual byte of a key
 def best_fit(keylength, offset, cipherbytes, expected_distribution):
   _bytes = get_all_bytes_t_apart(cipherbytes, keylength, offset)
   distributions = []
@@ -100,9 +110,9 @@ def best_fit(keylength, offset, cipherbytes, expected_distribution):
       # else:
       diff += abs(expected_distribution[k] - v)
 
-    distributions.append((key, dist, diff))
+    distributions.append((key, diff))
 
-  return sorted(distributions, key=lambda a: a[2])
+  return sorted(distributions, key=lambda a: a[1])
   '''
   expected key for this is retval[0]
   '''
@@ -110,33 +120,64 @@ def best_fit(keylength, offset, cipherbytes, expected_distribution):
 def gen_key(keylength, cipherbytes, expected_distribution):
   key = [0 for _ in range(keylength)]
 
+  top_fits = []
+
   total_diff = 0
   for i in range(keylength):
     fits = best_fit(keylength, i, cipherbytes, expected_distribution)
+    top_fit = list(filter(lambda x: x[1] > THRESHOLD, fits))
     best = fits[0]
     key[i] = best[0]
-    total_diff += best[2]
+    total_diff += best[1]
 
-  return key, total_diff / keylength
+    top_fits.append(top_fit)
+
+  return key, total_diff / keylength, top_fits
 
 def guess_key(cipherbytes, expected_distribution):
   keys = []
-  for keylength in range(1, KEY_MAX_LEN):
-    key, diff = gen_key(keylength, cipherbytes, expected_distribution)
-    keys.append((key, diff))
+  for keylength in range(1, KEY_MAX_LEN + 1):
+    key, diff, top_fits = gen_key(keylength, cipherbytes, expected_distribution)
+    keys.append((key, diff, top_fits))
   
   keys.sort(key=lambda a: a[1])
 
   return keys
 
+def fix_key(key, top_fits):
+  # print(key, list(map(list,top_fits)))
+  best_fits = [(i, *fits[0]) for i, fits in enumerate(top_fits)]
+
+  best_fits.sort(key=lambda x: x[2])
+
+  i, k_byte, _ = best_fits[0]
+
+  top_fits[i].pop(0)
+
+  key[i] = k_byte
+
+  return key, top_fits
+
 def guess(cipherbytes, words):
   expected_distribution = gen_expected_dist(cipherbytes, words)
   pot_keys = guess_key(cipherbytes, expected_distribution)
-  for k, diff in pot_keys:
-    result = decrypt(cipherbytes, k)
-    if verify(result, words):
-      return True
-  return False
+  for key, _, top_fits in pot_keys:
+    for _ in range(10):
+
+      result = decrypt(cipherbytes, key)
+      if verify(result, words):
+        print('Success', key, len(key))
+        return result
+
+      key, top_fits = fix_key(key, top_fits)
+
+  # partial decryption because everything else broke
+  # pot_keys = [(key, diff * pow(1.10, len(key))) for key, diff, _ in pot_keys]
+  # pot_keys.sort(key=lambda x: x[1])
+  key = pot_keys[0][0]
+  print('Partial Decryption', key, len(key))
+  result = decrypt(cipherbytes, key)
+  return result
 
 def gen_expected_dist(cipherbytes, words):
   average_length_of_words = sum(map(len, words)) / len(words)
@@ -147,26 +188,75 @@ def gen_expected_dist(cipherbytes, words):
 
   return expected_distribution
 
+def part1decrypt(plainbytes, cipherbytes, t, k):
+  test_key = [offset(c, p) for p, c in zip(plainbytes, cipherbytes)][:t]
+  result = decrypt(cipherbytes, test_key)
+
+  if result == plainbytes:
+    print(bytes_to_string(plainbytes))
+    exit(0)
+
+def part1(cipherbytes, plaintexts):
+  plainbytes = list(map(string_to_bytes, plaintexts))
+
+  for t in range(1, KEY_MAX_LEN):
+    plainseq = [(get_all_bytes_t_apart(p, t, 0), i) for i, p in enumerate(plainbytes)]
+
+    for k in range(len(KEY_SPACE)):
+      # test current k using (k, t) across cipherbytes
+      encrypted = get_all_bytes_t_apart(cipherbytes, t, 0)
+      decrypted = decrypt(encrypted, [k])
+
+      for seq, i in plainseq:
+        if seq == decrypted: # does deeep comparison
+          part1decrypt(plainbytes[i], cipherbytes, t, [k])
+  
+  return False
+
+
+
 def main():
-  key = 'abcdefghijklmnop'
-  words = None
-  with open('plaintext_dictionary_2.txt', 'r') as f:
-    words = [line.strip() for line in f.readlines()]
+  message = input()
+  print(message)
+  ciphertext = input()
+  cipherbytes = string_to_bytes(ciphertext)
 
-  num_correct = 0
+  part1(cipherbytes, part1_plaintexts)
 
-  ITERATIONS = 100
+  # if we think its part 2
+  result = guess(cipherbytes, words)
 
-  for _ in range(ITERATIONS):
-    test = ' '.join([random.choice(words) for _ in range(random.randint(50, 100))])
-    test = test[:500]
-    test_cipherbytes = encrypt(string_to_bytes(test), string_to_bytes(key))
-    guessed_correct = guess(test_cipherbytes, words)
+  _res = bytes_to_string(result)
 
-    if guessed_correct:
-      num_correct += 1
+  correctness = sum([1 if r == l else 0 for r, l in zip(_res, message)]) / len(message)
 
-  print(num_correct / ITERATIONS)
+  print('Correct: ', correctness * 100, '%')
+
+  if result:
+    print(bytes_to_string(result))
+    exit(0)
+  else:
+    print('Failed to decrypt')
+    exit(1)
+  # key = 'abcdefghijklmnop'
+  # words = None
+  # with open('plaintext_dictionary_2.txt', 'r') as f:
+  #   words = [line.strip() for line in f.readlines()]
+
+  # num_correct = 0
+
+  # ITERATIONS = 100
+
+  # for _ in range(ITERATIONS):
+  # test = ' '.join([random.choice(words) for _ in range(random.randint(50, 100))])
+  # test = test[:500]
+  # test_cipherbytes = encrypt(string_to_bytes(test), string_to_bytes(key))
+  # guessed_correct = guess(test_cipherbytes, words)
+
+  # if guessed_correct:
+  #   num_correct += 1
+
+  # print(num_correct / ITERATIONS)
     # TODO: calculate diff
 
     # TODO: compare diff's (with existing, else just accept)
