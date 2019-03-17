@@ -19,10 +19,6 @@ KEY_SPACE = string_to_bytes(SPACE_TO_LETTERS)
 
 THRESHOLD = 0.5
 
-test = '''surrenderee document spunkiest coquetted abatis leasehold nuclei fogginess genoa traitors blockbuster superpositions flams surprized honcho cetera to transmit psychol wintered gruntingly cheapness translation laborer lissomeness caravansaries reflexes overextends bitter uplift strate filler cupolaed automatic machree nonparasitic unashamed braggy typier potencies greyness gulped masonwork blandisher disks fadeaway origamis manurer olives engine looted whitehall imperils shadowbox jabbing exports'''
-
-# TODO: read from stdin
-
 def encrypt_letter(letter, shift):
   idx = (KEY_SPACE.index(letter) + shift) % len(KEY_SPACE)
   return KEY_SPACE[idx]
@@ -105,9 +101,6 @@ def best_fit(keylength, offset, cipherbytes, expected_distribution):
 
     diff = 0
     for k, v in dist.items():
-      # if (v > 0 and expected_distribution[k] == 0):
-      #   diff += 1
-      # else:
       diff += abs(expected_distribution[k] - v)
 
     distributions.append((key, diff))
@@ -145,7 +138,6 @@ def guess_key(cipherbytes, expected_distribution):
   return keys
 
 def fix_key(key, top_fits):
-  # print(key, list(map(list,top_fits)))
   best_fits = [(i, *fits[0]) for i, fits in enumerate(top_fits)]
 
   best_fits.sort(key=lambda x: x[2])
@@ -175,7 +167,6 @@ def guess(cipherbytes, words):
   # pot_keys = [(key, diff * pow(1.10, len(key))) for key, diff, _ in pot_keys]
   # pot_keys.sort(key=lambda x: x[1])
   key = pot_keys[0][0]
-  print('Partial Decryption', key, len(key))
   result = decrypt(cipherbytes, key)
   return result
 
@@ -188,7 +179,7 @@ def gen_expected_dist(cipherbytes, words):
 
   return expected_distribution
 
-def part1decrypt(plainbytes, cipherbytes, t, k):
+def part1decrypt(plainbytes, cipherbytes, t):
   test_key = [offset(c, p) for p, c in zip(plainbytes, cipherbytes)][:t]
   result = decrypt(cipherbytes, test_key)
 
@@ -199,7 +190,7 @@ def part1decrypt(plainbytes, cipherbytes, t, k):
 def part1(cipherbytes, plaintexts):
   plainbytes = list(map(string_to_bytes, plaintexts))
 
-  for t in range(1, KEY_MAX_LEN):
+  for t in range(1, KEY_MAX_LEN + 1):
     plainseq = [(get_all_bytes_t_apart(p, t, 0), i) for i, p in enumerate(plainbytes)]
 
     for k in range(len(KEY_SPACE)):
@@ -209,11 +200,9 @@ def part1(cipherbytes, plaintexts):
 
       for seq, i in plainseq:
         if seq == decrypted: # does deeep comparison
-          part1decrypt(plainbytes[i], cipherbytes, t, [k])
+          part1decrypt(plainbytes[i], cipherbytes, t)
   
   return False
-
-
 
 def main():
   message = input()
@@ -238,30 +227,6 @@ def main():
   else:
     print('Failed to decrypt')
     exit(1)
-  # key = 'abcdefghijklmnop'
-  # words = None
-  # with open('plaintext_dictionary_2.txt', 'r') as f:
-  #   words = [line.strip() for line in f.readlines()]
-
-  # num_correct = 0
-
-  # ITERATIONS = 100
-
-  # for _ in range(ITERATIONS):
-  # test = ' '.join([random.choice(words) for _ in range(random.randint(50, 100))])
-  # test = test[:500]
-  # test_cipherbytes = encrypt(string_to_bytes(test), string_to_bytes(key))
-  # guessed_correct = guess(test_cipherbytes, words)
-
-  # if guessed_correct:
-  #   num_correct += 1
-
-  # print(num_correct / ITERATIONS)
-    # TODO: calculate diff
-
-    # TODO: compare diff's (with existing, else just accept)
-
-    # accept / reject for this particular (t, j)
 
 if __name__ == '__main__':
   main()
