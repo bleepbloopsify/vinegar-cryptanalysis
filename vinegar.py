@@ -217,10 +217,6 @@ def main():
 
   _res = bytes_to_string(result)
 
-  # correctness = sum([1 if r == l else 0 for r, l in zip(_res, message)]) / len(message)
-
-  # print('Correct: ', correctness * 100, '%')
-
   if result:
     print(bytes_to_string(result))
     exit(0)
