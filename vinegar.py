@@ -205,8 +205,8 @@ def part1(cipherbytes, plaintexts):
   return False
 
 def main():
-  message = input()
-  print(message)
+  # message = input()
+  # print(message)
   ciphertext = input()
   cipherbytes = string_to_bytes(ciphertext)
 
@@ -217,9 +217,9 @@ def main():
 
   _res = bytes_to_string(result)
 
-  correctness = sum([1 if r == l else 0 for r, l in zip(_res, message)]) / len(message)
+  # correctness = sum([1 if r == l else 0 for r, l in zip(_res, message)]) / len(message)
 
-  print('Correct: ', correctness * 100, '%')
+  # print('Correct: ', correctness * 100, '%')
 
   if result:
     print(bytes_to_string(result))
